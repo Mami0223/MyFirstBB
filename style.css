@@ -20,6 +20,10 @@ body {
   section {
     padding: 0px 10px;
   }
+
+  section .id{
+    margin-right : 10px;
+  }
   
   section .username {
     color: green !important;
@@ -35,6 +39,8 @@ body {
   section .comment {
     margin-top: 0;
     margin-left: 20px;
+    word-break: break-all;
+    white-space: pre-wrap;
   }
   
   .success_message {
