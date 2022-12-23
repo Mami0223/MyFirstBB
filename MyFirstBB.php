@@ -113,6 +113,7 @@ $comment_array = $pdo->query($sql);
                 <article>  
                 <div class="wrapper">
                 <div class = "nameArea">
+                    <span class="id"><?php echo $comment["id"]; ?></span>
                     <span>名前：</span>
                     <p class="username"><?php echo $comment["username"]; ?></p>
                     <time>:<?php echo $comment["postDate"]; ?></time>
