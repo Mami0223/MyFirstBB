@@ -31,11 +31,19 @@ if (!empty($_POST["submitButton"])) {
         $error_messages["comment"] = "コメントを入力してください";
     }
 
-    //画像がある場合、filesディレクトリに保存
+    //画像がある場合、filesディレクトリが存在するか確認して保存（存在しなければディレクトリ作成）
     if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $_FILES["upfile"]["name"])) {
-    chmod("files/" . $_FILES["upfile"]["name"], 0644);
-    //echo $_FILES["upfile"]["name"] . "をアップロードしました。";
-    //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
+        if (file_exists("files/")) {
+            chmod("files/" . $_FILES["upfile"]["name"], 0644);
+            //echo $_FILES["upfile"]["name"] . "をアップロードしました。";
+            //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
+        } else {
+            if (mkdir("files/", 0777)) {
+                chmod("files/" . $_FILES["upfile"]["name"], 0644);
+            } else {
+                echo "ディレクトリ作成に失敗しました";
+            }
+        }
     }
 
 
@@ -59,23 +67,14 @@ if (!empty($_POST["submitButton"])) {
             $stmt->bindParam(':imagePath', $path, PDO::PARAM_STR);
 
             $stmt->execute();
-
         } catch (PDOException $e) {
             echo $e->getMessage();
         }
     }
 
-
-    
-    if($comment_array){
-        $_SESSION['success_message'] = 'メッセージを書き込みました。';
-    }else{
-        $error_message[] = '書き込みに失敗しました。';
-    }
-
     //DBの接続を閉じる
     $pdo = null;
-    header('Location: MyFirstBB.php');//リダイレクトの防止　https://gray-code.com/php/make-the-board-vol23/
+    header('Location: MyFirstBB.php'); //リダイレクトの防止　https://gray-code.com/php/make-the-board-vol23/
     exit;
 }
 
@@ -83,11 +82,18 @@ if (!empty($_POST["submitButton"])) {
 $sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` ";
 $comment_array = $pdo->query($sql);
 
+if ($comment_array) {
+    $_SESSION['success_message'] = 'メッセージを書き込みました。';
+} else {
+    $error_message[] = '書き込みに失敗しました。';
+}
+
 ?>
 
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -96,57 +102,59 @@ $comment_array = $pdo->query($sql);
     <title>PHP掲示板</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <h1 class="title">PHPとMySQLで掲示板</h1>
-    <?php if( empty($_POST['btn_submit']) && !empty($_SESSION['success_message']) ): ?>
-	<p class="success_message"><?php echo htmlspecialchars( $_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); ?></p>
-	<?php unset($_SESSION['success_message']); ?>
+    <?php if (empty($_POST['btn_submit']) && !empty($_SESSION['success_message'])) : ?>
+        <p class="success_message"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php unset($_SESSION['success_message']); ?>
     <?php endif; ?>
 
     <hr>
     <div class="boardWrapper">
         <section>
-            <?php 
-            foreach($comment_array as $comment): 
-            $imagesrc = "image.php?id=".$comment["id"];
+            <?php
+            foreach ($comment_array as $comment) :
+                $imagesrc = "image.php?id=" . $comment["id"];
             ?>
-                <article>  
-                <div class="wrapper">
-                <div class = "nameArea">
-                    <span class="id"><?php echo $comment["id"]; ?></span>
-                    <span>名前：</span>
-                    <p class="username"><?php echo $comment["username"]; ?></p>
-                    <time>:<?php echo $comment["postDate"]; ?></time>
-                </div>
-                <p class="comment"><?php echo $comment["comment"]; ?></p>
-                 
-                <?php
-                if(!empty($comment["imageName"])):
-                ?>
-                    <img src= <?php echo '"'.$imagesrc.'"'?>, width="250">
-                <?php endif;?>
+                <article>
+                    <div class="wrapper">
+                        <div class="nameArea">
+                            <span class="id"><?php echo $comment["id"]; ?></span>
+                            <span>名前：</span>
+                            <p class="username"><?php echo $comment["username"]; ?></p>
+                            <time>:<?php echo $comment["postDate"]; ?></time>
+                        </div>
+                        <p class="comment"><?php echo $comment["comment"]; ?></p>
+
+                        <?php
+                        if (!empty($comment["imageName"])) :
+                        ?>
+                            <img src="<?php echo $imagesrc ?>" , width="250">
+                        <?php endif; ?>
 
 
-                </div>
+                    </div>
                 </article>
             <?php endforeach; ?>
         </section>
         <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
-        <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
+            <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
             <div>
                 <input type="submit" value="書き込む" name="submitButton">
                 <label for="">名前：</label>
-                <input type="text" name = "username">
+                <input type="text" name="username" max="30" 　value="" required>
             </div>
             <div>
-                <textarea class="commentTextArea" name="comment"></textarea>
+                <textarea class="commentTextArea" name="comment" value="" required></textarea>
             </div>
             <div>
-                ファイル：<br />
+                添付ファイル：<br />
                 <input type="file" name="upfile" size="30" /><br />
                 <br />
             </div>
         </form>
     </div>
 </body>
+
 </html>
