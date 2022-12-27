@@ -78,15 +78,36 @@ if (!empty($_POST["submitButton"])) {
     exit;
 }
 
+//ページング機能の追加
+$MAX = 10; //1頁に表示するコメントの最大数は10個
+if (!isset($_GET['page_id'])) { // $_GET['page_id'] はURLに渡された現在のページ数
+    $now = 1; // 設定されてない場合は1ページ目にする
+} else {
+    $now = $_GET['page_id'];
+}
+
+$start_no = ($now - 1) * $MAX; // DBの何番目から取得すればよいか
+$end_no = $start_no + $MAX;
+
+//alldata数をカウント用
+$sql_all_num = "SELECT id FROM `bb_images_table` ";
+$comment_array_all_num = $pdo->query($sql_all_num);
+$comment_all_num = $comment_array_all_num->rowCount(); //トータルdata件数
+$max_page = ceil($comment_all_num / $MAX);
+
+
 //DBからコメントデータを取得する
-$sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` ";
+//$sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` ";
+$sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
 
+/*
 if ($comment_array) {
     $_SESSION['success_message'] = 'メッセージを書き込みました。';
 } else {
     $error_message[] = '書き込みに失敗しました。';
 }
+*/
 
 ?>
 
@@ -111,6 +132,7 @@ if ($comment_array) {
     <?php endif; ?>
 
     <hr>
+
     <div class="boardWrapper">
         <section>
             <?php
@@ -139,7 +161,8 @@ if ($comment_array) {
             <?php endforeach; ?>
         </section>
         <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
-            <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
+        <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
+
             <div>
                 <input type="submit" value="書き込む" name="submitButton">
                 <label for="">名前：</label>
@@ -153,8 +176,17 @@ if ($comment_array) {
                 <input type="file" name="upfile" size="30" /><br />
                 <br />
             </div>
+
         </form>
     </div>
+
+    <!-- ページ移動 -->
+    <?php if ($now > 1) : ?>
+        <a href="MyFirstBB.php?page_id=<?php echo ($now - 1); ?>">前のページへ</a>
+    <?php endif; ?>
+    <?php if ($now < $max_page) : ?>
+        <a href="MyFirstBB.php?page_id=<?php echo ($now + 1); ?>">次のページへ</a>
+    <?php endif; ?>
 </body>
 
 </html>
