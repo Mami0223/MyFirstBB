@@ -9,7 +9,8 @@ $comment_array = array();
 $pdo = null;
 $stmt = null;
 $error_messages = array();
-
+$postDate = date("Y-m-d H:i:s");
+$postTime = strtotime("now");//同名の画像ファイルがアップロードされた際の区別用
 
 //DB接続
 try {
@@ -32,14 +33,14 @@ if (!empty($_POST["submitButton"])) {
     }
 
     //画像がある場合、filesディレクトリが存在するか確認して保存（存在しなければディレクトリ作成）
-    if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $_FILES["upfile"]["name"])) {
+    if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $postTime. $_FILES["upfile"]["name"])) {
         if (file_exists("files/")) {
-            chmod("files/" . $_FILES["upfile"]["name"], 0644);
+            chmod("files/" . $postTime . $_FILES["upfile"]["name"], 0644);
             //echo $_FILES["upfile"]["name"] . "をアップロードしました。";
             //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
         } else {
             if (mkdir("files/", 0777)) {
-                chmod("files/" . $_FILES["upfile"]["name"], 0644);
+                chmod("files/" . $postTime . $_FILES["upfile"]["name"], 0644);
             } else {
                 echo "ディレクトリ作成に失敗しました";
             }
@@ -49,7 +50,6 @@ if (!empty($_POST["submitButton"])) {
 
     //エラーメッセージが何もない時だけデータ保存できる
     if (empty($error_messages)) {
-        $postDate = date("Y-m-d H:i:s");
 
         try {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imageContent,imagePath) 
@@ -80,13 +80,13 @@ if (!empty($_POST["submitButton"])) {
 
 //ページング機能の追加
 $MAX = 10; //1頁に表示するコメントの最大数は10個
-if (!isset($_GET['page_id'])) { // $_GET['page_id'] はURLに渡された現在のページ数
+if (!isset($_GET['page'])) { // $_GET['page_id'] はURLに渡された現在のページ数
     $now = 1; // 設定されてない場合は1ページ目にする
 } else {
-    $now = $_GET['page_id'];
+    $now = $_GET['page'];
 }
 
-$start_no = ($now - 1) * $MAX; // DBの何番目から取得すればよいか
+$start_no = ($now - 1) * $MAX + 1; // DBの何番目から取得すればよいか
 $end_no = $start_no + $MAX;
 
 //alldata数をカウント用
@@ -95,9 +95,23 @@ $comment_array_all_num = $pdo->query($sql_all_num);
 $comment_all_num = $comment_array_all_num->rowCount(); //トータルdata件数
 $max_page = ceil($comment_all_num / $MAX);
 
+//page番号をつくる
+if ($now == 1 || $now == $max_page) {
+    $range = 4;
+} elseif ($now == 2 || $now == $max_page - 1) {
+    $range = 3;
+} else {
+    $range = 2;
+}
+
+//一番下の表示用
+if ($end_no > $comment_all_num) {
+    $hyogi_end_no = $comment_all_num;
+} else {
+    $hyogi_end_no = $end_no - 1;
+}
 
 //DBからコメントデータを取得する
-//$sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` ";
 $sql = "SELECT id,username,comment,postDate,imageName,imageType,imageContent,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
 
@@ -161,7 +175,7 @@ if ($comment_array) {
             <?php endforeach; ?>
         </section>
         <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
-        <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
+            <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
 
             <div>
                 <input type="submit" value="書き込む" name="submitButton">
@@ -181,12 +195,36 @@ if ($comment_array) {
     </div>
 
     <!-- ページ移動 -->
-    <?php if ($now > 1) : ?>
-        <a href="MyFirstBB.php?page_id=<?php echo ($now - 1); ?>">前のページへ</a>
-    <?php endif; ?>
-    <?php if ($now < $max_page) : ?>
-        <a href="MyFirstBB.php?page_id=<?php echo ($now + 1); ?>">次のページへ</a>
-    <?php endif; ?>
+    <p class="from_to">
+        <?php echo $comment_all_num; ?>件中 <?php echo $start_no; ?> - <?php echo $hyogi_end_no; ?> 件目を表示
+    </p>
+    <!--戻る-->
+    <div class="pagination">
+        <?php if ($now >= 2) : ?>
+            <a href="index.php?page=<?php echo ($now - 1); ?>" class="page_feed">&laquo;</a>
+        <?php else :; ?>
+            <span class="first_last_page">&laquo;</span>
+        <?php endif; ?>
+
+        <!--ページ番号-->
+        <?php for ($i = 1; $i <= $max_page; $i++) : ?>
+            <?php if ($i >= $now - $range && $i <= $now + $range) : ?>
+                <?php if ($i == $now) : ?>
+                    <span class="now_page_number"><?php echo $i; ?></span>
+                <?php else : ?>
+                    <a href="?page=<?php echo $i; ?>" class="page_number"><?php echo $i; ?></a>
+                <?php endif; ?>
+            <?php endif; ?>
+        <?php endfor; ?>
+
+        <!--進む-->
+        <?php if ($now < $max_page) : ?>
+            <a href="index.php?page=<?php echo ($now + 1); ?>" class="page_feed">&raquo;</a>
+        <?php else : ?>
+            <span class="first_last_page">&raquo;</span>
+        <?php endif; ?>
+    </div>
+
 </body>
 
 </html>
