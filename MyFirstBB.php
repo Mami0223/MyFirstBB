@@ -4,13 +4,14 @@ include('./setting.php');
 
 date_default_timezone_set("Asia/Tokyo");
 
-
 $comment_array = array();
 $pdo = null;
 $stmt = null;
 $error_messages = array();
 $postDate = date("Y-m-d H:i:s");
-$postTime = strtotime("now");//同名の画像ファイルがアップロードされた際の区別用
+$filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用
+$ext = null;
+$mami = null;
 
 //DB接続
 try {
@@ -33,19 +34,32 @@ if (!empty($_POST["submitButton"])) {
     }
 
     //画像がある場合、filesディレクトリが存在するか確認して保存（存在しなければディレクトリ作成）
-    if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $postTime. $_FILES["upfile"]["name"])) {
+    if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
         if (file_exists("files/")) {
-            chmod("files/" . $postTime . $_FILES["upfile"]["name"], 0644);
+            chmod("files/" . $filePostDate . $_FILES["upfile"]["name"], 0644);
             //echo $_FILES["upfile"]["name"] . "をアップロードしました。";
             //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
         } else {
             if (mkdir("files/", 0777)) {
-                chmod("files/" . $postTime . $_FILES["upfile"]["name"], 0644);
+                chmod("files/" . $filePostDate . $_FILES["upfile"]["name"], 0644);
             } else {
                 echo "ディレクトリ作成に失敗しました";
             }
         }
     }
+
+
+    //画像の拡張子をチェック
+    $ext = pathinfo("/files/image.text", PATHINFO_EXTENSION); //拡張子を取得
+    setcookie("ext", $ext);
+    //$ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
+    if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg"|| $ext == "gif" || $ext == "bmp")) {
+        echo "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
+        $error_messages["img"] = "指定された拡張子のデータをアップロードしてください";
+    }
+
+
+    //大サイズのファイルのみアップロードできない場合は、php.iniのupload_max_filesizeを確認してください。
 
 
     //エラーメッセージが何もない時だけデータ保存できる
@@ -60,7 +74,7 @@ if (!empty($_POST["submitButton"])) {
             $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
 
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
-            $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
+            //$ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             $stmt->bindParam(':imageType', $ext, PDO::PARAM_STR);
             $stmt->bindParam(':imageContent', $_FILES["upfile"]["tmp_name"], PDO::PARAM_STR);
             $path = "files/" . $_FILES["upfile"]["name"];
@@ -173,6 +187,7 @@ if ($comment_array) {
                     </div>
                 </article>
             <?php endforeach; ?>
+
         </section>
         <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
             <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
