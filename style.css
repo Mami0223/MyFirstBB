@@ -1,5 +1,6 @@
 body {
-  background-color: #c6daf1;
+  background-image:url("corkBoardTexture.jpg");
+  /*background-color: #c6daf1;*/
 }
 
 .title {
@@ -41,16 +42,6 @@ section .comment {
   margin-left: 20px;
   word-break: break-all;
   white-space: pre-wrap;
-}
-
-.success_message {
-  color: green;
-  padding-left: 10px;
-}
-
-.error_message {
-  color: red;
-  padding-left: 10px;
 }
 
 .formWrapper {

@@ -16,12 +16,14 @@ $ext = null;
 try {
     $pdo = new PDO(DB_DSN, DB_USER, DB_PASS);
 } catch (PDOException $e) {
-    echo $e->getMessage();
+    error_log("DBに接続できませんでした", 3, "./error.log");
 }
+
 
 /////////////////////////
 // ページング機能の追加  //
 /////////////////////////
+
 $MAX = 10; //1頁に表示するコメントの最大数は10個
 if (!isset($_GET['page'])) { // $_GET['page_id'] はURLに渡された現在のページ数
     $now = 1; // 設定されてない場合は1ページ目にする
@@ -49,9 +51,9 @@ if ($now == 1 || $now == $max_page) {
 
 //一番下の表示用
 if ($end_no > $comment_all_num) {
-    $hyogi_end_no = $comment_all_num;
+    $hyoji_end_no = $comment_all_num;
 } else {
-    $hyogi_end_no = $end_no - 1;
+    $hyoji_end_no = $end_no - 1;
 }
 
 
@@ -63,13 +65,10 @@ if ($end_no > $comment_all_num) {
 if (!empty($_POST["submitButton"])) {
     //名前のチェック
     if (empty($_POST["username"])) {
-        //error_log("名前を入力してください", 3, "./error.log");
-        //echo "名前を入力してください";
         $error_messages["username"] = "名前を入力してください";
     }
     //コメントのチェック
     if (empty($_POST["comment"])) {
-        //error_log("コメントを入力してください", 3, "./error.log");
         $error_messages["comment"] = "コメントを入力してください";
     }
 
@@ -81,26 +80,22 @@ if (!empty($_POST["submitButton"])) {
     //画像が添付された場合、拡張子とデータサイズをチェック
     if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
         chmod("files/" . $filePostDate . $_FILES["upfile"]["name"], 0644);
-            //echo $_FILES["upfile"]["name"] . "をアップロードしました。";
-            //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
+        //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
             
         //画像の拡張子をチェック
-        //$ext = pathinfo("/files/image.text", PATHINFO_EXTENSION); //拡張子を取得
-        //setcookie("ext", $ext);
         $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
         if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg"|| $ext == "gif" || $ext == "bmp")) {
             error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
             $error_messages["imgExt"] = "指定された拡張子のデータをアップロードしてください";
         }
-    }else{//if($_FILES["upfile"]["size"] >= 2*1024*1024){//2MB 
-    //画像添付できないのは画像のデータサイズが大きい時
+    }else{//if($_FILES["upfile"]["size"] >= 2*1024*1024) 
+    //画像添付できないのは画像のデータサイズが2MBよりも大きい時
         error_log("ファイルの添付可能サイズは最大2MBです", 3, "./error.log");
         $error_messages["imgSize"] = "ァイルの添付可能サイズは最大2MBです";    
     }
 
     //エラーメッセージが何もない時だけデータ保存できる
     if (empty($error_messages)) {
-
         try {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
@@ -118,14 +113,14 @@ if (!empty($_POST["submitButton"])) {
             $stmt->execute();
         } catch (PDOException $e) {
             error_log("データ保存できませんでした", 3, "./error.log");
-            echo $e->getMessage();
         }
     }
 
     //DBの接続を閉じる
     $pdo = null;
+
     $link = "Location: MyFirstBB.php?page={$now}";
-    header($link); //リダイレクトの防止　https://gray-code.com/php/make-the-board-vol23/
+    header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
     exit;
 }
 
@@ -137,20 +132,9 @@ if (file_exists("./error.log")) {
     unlink("./error.log");//エラーログファイルを削除
 }
 
-
 //DBからコメントデータを取得する
 $sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
-
-
-
-/*
-if ($comment_array) {
-    $_SESSION['success_message'] = 'メッセージを書き込みました。';
-} else {
-    $error_message[] = '書き込みに失敗しました。';
-}
-*/
 
 ?>
 
@@ -197,12 +181,9 @@ if ($comment_array) {
                         ?>
                     <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
-
-
                 </div>
             </article>
             <?php endforeach; ?>
-
         </section>
         <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
             <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
@@ -226,32 +207,33 @@ if ($comment_array) {
 
     <!-- ページ移動 -->
     <p class="from_to">
-        <?php echo $comment_all_num; ?>件中 <?php echo $start_no; ?> - <?php echo $hyogi_end_no; ?> 件目を表示
+        <?php echo $comment_all_num; ?>件中 <?php echo $start_no; ?> - <?php echo $hyoji_end_no; ?> 件目を表示
     </p>
-    <!--戻る-->
+
     <div class="pagination">
+        <!--戻る-->
         <?php if ($now >= 2) : ?>
-        <a href="MyFirstBB.php?page=<?php echo ($now - 1); ?>" class="page_feed">&laquo;</a>
+            <a href="MyFirstBB.php?page=<?php echo ($now - 1); ?>" class="page_feed">&laquo;</a>
         <?php else :; ?>
-        <span class="first_last_page">&laquo;</span>
+            <span class="first_last_page">&laquo;</span>
         <?php endif; ?>
 
         <!--ページ番号-->
         <?php for ($i = 1; $i <= $max_page; $i++) : ?>
-        <?php if ($i >= $now - $range && $i <= $now + $range) : ?>
-        <?php if ($i == $now) : ?>
-        <span class="now_page_number"><?php echo $i; ?></span>
-        <?php else : ?>
-        <a href="?page=<?php echo $i; ?>" class="page_number"><?php echo $i; ?></a>
-        <?php endif; ?>
-        <?php endif; ?>
+            <?php if ($i >= $now - $range && $i <= $now + $range) : ?>
+                <?php if ($i == $now) : ?>
+                    <span class="now_page_number"><?php echo $i; ?></span>
+                <?php else : ?>
+                    <a href="?page=<?php echo $i; ?>" class="page_number"><?php echo $i; ?></a>
+                <?php endif; ?>
+            <?php endif; ?>
         <?php endfor; ?>
 
         <!--進む-->
         <?php if ($now < $max_page) : ?>
-        <a href="MyFirstBB.php?page=<?php echo ($now + 1); ?>" class="page_feed">&raquo;</a>
+            <a href="MyFirstBB.php?page=<?php echo ($now + 1); ?>" class="page_feed">&raquo;</a>
         <?php else : ?>
-        <span class="first_last_page">&raquo;</span>
+            <span class="first_last_page">&raquo;</span>
         <?php endif; ?>
     </div>
 
