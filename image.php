@@ -27,7 +27,7 @@ $stmt = $dbh->prepare($sql);
 // ここで実際にデータベースに対してクエリが実行され、結果がレコードセットとして記憶される
 $stmt->execute();
 
-// fetchAllメソッドで、結果のレコードセットを取得し、最初のレコードを$imageに代入
+// fetchAllメソッドで、結果のレコードセットを取得し、最初のレコードを$recordに代入
 $record = $stmt->fetchALL(PDO::FETCH_ASSOC)[0];
 
 // 以下は同様にブラウザに出力
