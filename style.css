@@ -58,6 +58,7 @@ section .comment {
 /*ページネーション用デザイン*/
 .from_to {
   text-align:  center;
+  font-weight: bold;
 }
 
 a:link {

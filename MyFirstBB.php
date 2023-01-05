@@ -77,21 +77,23 @@ if (!empty($_POST["submitButton"])) {
         mkdir("files/", 0777);
     }
 
-    //画像が添付された場合、拡張子とデータサイズをチェック
-    if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
-        chmod("files/" . $filePostDate . $_FILES["upfile"]["name"], 0644);
-        //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"] 
-            
-        //画像の拡張子をチェック
-        $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
-        if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg"|| $ext == "gif" || $ext == "bmp")) {
-            error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
-            $error_messages["imgExt"] = "指定された拡張子のデータをアップロードしてください";
+    //添付可能な画像データサイズは5MBまで
+    if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
+        error_log("ファイルの添付可能サイズは最大5MBです", 3, "./error.log");
+        $error_messages["imgSize"] = "ファイルの添付可能サイズは最大5MBです";
+    } else {
+        //画像が添付された場合、拡張子をチェック
+        if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
+            chmod("files/" . $filePostDate . $_FILES["upfile"]["name"], 0644);
+            //移動元のファイルは $_FILES["upfile"]["tmp_name"] 移動先は "files/" . $_FILES["upfile"]["name"]
+
+            //画像の拡張子をチェック
+            $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
+            if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
+                error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
+                $error_messages["imgExt"] = "指定された拡張子のデータをアップロードしてください";
+            }
         }
-    }else{//if($_FILES["upfile"]["size"] >= 2*1024*1024) 
-    //画像添付できないのは画像のデータサイズが2MBよりも大きい時
-        error_log("ファイルの添付可能サイズは最大2MBです", 3, "./error.log");
-        $error_messages["imgSize"] = "ァイルの添付可能サイズは最大2MBです";    
     }
 
     //エラーメッセージが何もない時だけデータ保存できる
@@ -119,10 +121,20 @@ if (!empty($_POST["submitButton"])) {
     //DBの接続を閉じる
     $pdo = null;
 
-    $link = "Location: MyFirstBB.php?page={$now}";
+    //最新投稿の存在するページを開く
+    if ($comment_all_num == $max_page * $MAX) {
+        $new_max_page = $max_page + 1;
+        $link = "Location: MyFirstBB.php?page={$new_max_page}";
+    } else {
+        $link = "Location: MyFirstBB.php?page={$max_page}";
+    }
     header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
     exit;
 }
+
+//DBからコメントデータを取得する
+$sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
+$comment_array = $pdo->query($sql);
 
 //エラーログファイルが存在する場合は、アラートを出す
 if (file_exists("./error.log")) {
@@ -132,9 +144,6 @@ if (file_exists("./error.log")) {
     unlink("./error.log");//エラーログファイルを削除
 }
 
-//DBからコメントデータを取得する
-$sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
-$comment_array = $pdo->query($sql);
 
 ?>
 
@@ -153,11 +162,6 @@ $comment_array = $pdo->query($sql);
 
 <body>
     <h1 class="title">PHPとMySQLで掲示板</h1>
-    <?php if (empty($_POST['btn_submit']) && !empty($_SESSION['success_message'])) : ?>
-    <p class="success_message"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); ?></p>
-    <?php unset($_SESSION['success_message']); ?>
-    <?php endif; ?>
-
     <hr>
 
     <div class="boardWrapper">
@@ -165,7 +169,7 @@ $comment_array = $pdo->query($sql);
             <?php
             foreach ($comment_array as $comment) :
                 $imagesrc = "image.php?id=" . $comment["id"];
-            ?>
+                ?>
             <article>
                 <div class="wrapper">
                     <div class="nameArea">
@@ -177,8 +181,8 @@ $comment_array = $pdo->query($sql);
                     <p class="comment"><?php echo $comment["comment"]; ?></p>
 
                     <?php
-                        if (!empty($comment["imageName"])) :
-                        ?>
+                            if (!empty($comment["imageName"])) :
+                                ?>
                     <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
@@ -213,7 +217,7 @@ $comment_array = $pdo->query($sql);
     <div class="pagination">
         <!--戻る-->
         <?php if ($now >= 2) : ?>
-            <a href="MyFirstBB.php?page=<?php echo ($now - 1); ?>" class="page_feed">&laquo;</a>
+            <a href="MyFirstBB.php?page=<?php echo($now - 1); ?>" class="page_feed">&laquo;</a>
         <?php else :; ?>
             <span class="first_last_page">&laquo;</span>
         <?php endif; ?>
@@ -231,7 +235,7 @@ $comment_array = $pdo->query($sql);
 
         <!--進む-->
         <?php if ($now < $max_page) : ?>
-            <a href="MyFirstBB.php?page=<?php echo ($now + 1); ?>" class="page_feed">&raquo;</a>
+            <a href="MyFirstBB.php?page=<?php echo($now + 1); ?>" class="page_feed">&raquo;</a>
         <?php else : ?>
             <span class="first_last_page">&raquo;</span>
         <?php endif; ?>
