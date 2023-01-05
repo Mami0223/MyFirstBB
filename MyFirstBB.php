@@ -105,9 +105,9 @@ if ((!empty($_POST["submitButton"]))) {
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
 
             //SQLインジェクション・クロスサイトスクリプティング対策
-            $usernameSpecialChars = htmlspecialchars($_POST['username'],ENT_QUOTES,"UTF-8");
-            $stmt->bindParam(':username',$usernameSpecialChars , PDO::PARAM_STR);
-            $commentSpecialChars = htmlspecialchars($_POST['comment'],ENT_QUOTES,"UTF-8");
+            $usernameSpecialChars = htmlspecialchars($_POST['username'], ENT_QUOTES, "UTF-8");
+            $stmt->bindParam(':username', $usernameSpecialChars, PDO::PARAM_STR);
+            $commentSpecialChars = htmlspecialchars($_POST['comment'], ENT_QUOTES, "UTF-8");
             $stmt->bindParam(':comment', $commentSpecialChars, PDO::PARAM_STR);
 
             $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
@@ -148,8 +148,6 @@ if (file_exists("./error.log")) {
     echo $alert;
     unlink("./error.log");//エラーログファイルを削除
 }
-
-
 ?>
 
 
@@ -185,9 +183,7 @@ if (file_exists("./error.log")) {
                     </div>
                     <p class="comment"><?php echo $comment["comment"]; ?></p>
 
-                    <?php
-                            if (!empty($comment["imageName"])) :
-                                ?>
+                    <?php if (!empty($comment["imageName"])) :?>
                     <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
@@ -200,7 +196,7 @@ if (file_exists("./error.log")) {
             <div>
                 <input type="submit" value="書き込む" name="submitButton">
                 <label for="">名前：</label>
-                <input type="text" name="username" max="30" 　value="" required>
+                <input type="text" name="username" max="30" value="" required>
             </div>
             <div>
                 <textarea class="commentTextArea" name="comment" value="" required></textarea>
@@ -223,7 +219,7 @@ if (file_exists("./error.log")) {
         <!--戻る-->
         <?php if ($now >= 2) : ?>
             <a href="MyFirstBB.php?page=<?php echo($now - 1); ?>" class="page_feed">&laquo;</a>
-        <?php else :; ?>
+        <?php else: ?>
             <span class="first_last_page">&laquo;</span>
         <?php endif; ?>
 
