@@ -87,6 +87,7 @@ if ((!empty($_POST["submitButton"]))) {
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
                 error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
+                unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除   
             }
         }
     }
