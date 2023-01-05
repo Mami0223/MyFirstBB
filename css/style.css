@@ -1,6 +1,5 @@
 body {
-  background-image:url("corkBoardTexture.jpg");
-  /*background-color: #c6daf1;*/
+  background-image:url("../img/corkBoardTexture.jpg");
 }
 
 .title {

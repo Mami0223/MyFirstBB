@@ -1,6 +1,6 @@
 <?php
 
-include('./setting.php');
+include('utils/setting.php');
 
 $comment_array = array();
 $pdo = null;
@@ -154,7 +154,7 @@ if (file_exists("./error.log")) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>PHP掲示板</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -164,7 +164,7 @@ if (file_exists("./error.log")) {
         <section>
             <?php
             foreach ($comment_array as $comment) :
-                $imagesrc = "image.php?id=" . $comment["id"];
+                $imagesrc = "utils/image.php?id=" . $comment["id"];
             ?>
             <article>
                 <div class="wrapper">

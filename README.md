@@ -20,7 +20,7 @@ http://54.178.114.228/MyFirstBB/MyFirstBB.php
 - ページネーション
 - SQLインジェクション対策
 - クロスサイトスクリプティング対策
-- レスポンシブ対応デザイン
+- レスポンシブデザイン
 
 # Requirements
 - Ubuntu 22.04.1
