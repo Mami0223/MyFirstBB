@@ -62,13 +62,15 @@ if ($end_no > $comment_all_num) {
 /////////////////////////
 
 //フォームを打ち込んだとき
-if (!empty($_POST["submitButton"])) {
+if ((!empty($_POST["submitButton"]))) {
     //名前のチェック
-    if (empty($_POST["username"])) {
+    if (preg_match('/^\s*$/u', $_POST["username"])) {
+        error_log("名前を入力してください（空白不可）", 3, "./error.log");
         $error_messages["username"] = "名前を入力してください";
     }
     //コメントのチェック
-    if (empty($_POST["comment"])) {
+    if (preg_match('/^\s*$/u', $_POST["comment"])) {
+        error_log("コメントを入力してください（空白不可）", 3, "./error.log");
         $error_messages["comment"] = "コメントを入力してください";
     }
 
@@ -102,10 +104,13 @@ if (!empty($_POST["submitButton"])) {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
 
-            $stmt->bindParam(':username', $_POST['username'], PDO::PARAM_STR);
-            $stmt->bindParam(':comment', $_POST["comment"], PDO::PARAM_STR);
-            $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
+            //SQLインジェクション・クロスサイトスクリプティング対策
+            $usernameSpecialChars = htmlspecialchars($_POST['username'],ENT_QUOTES,"UTF-8");
+            $stmt->bindParam(':username',$usernameSpecialChars , PDO::PARAM_STR);
+            $commentSpecialChars = htmlspecialchars($_POST['comment'],ENT_QUOTES,"UTF-8");
+            $stmt->bindParam(':comment', $commentSpecialChars, PDO::PARAM_STR);
 
+            $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得(既述のextは画像添付しない場合に読み込まれないのでここでextの再定義必須)
             $stmt->bindParam(':imageType', $ext, PDO::PARAM_STR);
