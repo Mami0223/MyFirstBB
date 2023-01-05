@@ -9,7 +9,6 @@ body {
 }
 
 .boardWrapper {
-  /* background-color: #b3eeb3; */
   background-color: #f3eded;
   padding: 20px;
   max-width: 1000px;
@@ -53,6 +52,12 @@ section .comment {
   margin-top: 10px;
   width: 500px;
   height: 90px;
+}
+
+@media screen and (max-width:520px){
+  .commentTextArea{
+    width: 270px;
+  }
 }
 
 /*ページネーション用デザイン*/

@@ -2,12 +2,9 @@
 
 include('./setting.php');
 
-date_default_timezone_set("Asia/Tokyo");
-
 $comment_array = array();
 $pdo = null;
 $stmt = null;
-$error_messages = array();
 $postDate = date("Y-m-d H:i:s");
 $filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用
 $ext = null;
@@ -66,12 +63,10 @@ if ((!empty($_POST["submitButton"]))) {
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
         error_log("名前を入力してください（空白不可）", 3, "./error.log");
-        $error_messages["username"] = "名前を入力してください";
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
         error_log("コメントを入力してください（空白不可）", 3, "./error.log");
-        $error_messages["comment"] = "コメントを入力してください";
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -82,7 +77,6 @@ if ((!empty($_POST["submitButton"]))) {
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
         error_log("ファイルの添付可能サイズは最大5MBです", 3, "./error.log");
-        $error_messages["imgSize"] = "ファイルの添付可能サイズは最大5MBです";
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -93,13 +87,12 @@ if ((!empty($_POST["submitButton"]))) {
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
                 error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
-                $error_messages["imgExt"] = "指定された拡張子のデータをアップロードしてください";
             }
         }
     }
 
     //エラーメッセージが何もない時だけデータ保存できる
-    if (empty($error_messages)) {
+    if (!(file_exists("./error.log"))) {
         try {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
@@ -165,14 +158,13 @@ if (file_exists("./error.log")) {
 
 <body>
     <h1 class="title">PHPとMySQLで掲示板</h1>
-    <hr>
 
     <div class="boardWrapper">
         <section>
             <?php
             foreach ($comment_array as $comment) :
                 $imagesrc = "image.php?id=" . $comment["id"];
-                ?>
+            ?>
             <article>
                 <div class="wrapper">
                     <div class="nameArea">
@@ -184,7 +176,7 @@ if (file_exists("./error.log")) {
                     <p class="comment"><?php echo $comment["comment"]; ?></p>
 
                     <?php if (!empty($comment["imageName"])) :?>
-                    <img src="<?php echo $imagesrc ?>" , width="250">
+                        <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
             </article>
@@ -196,7 +188,7 @@ if (file_exists("./error.log")) {
             <div>
                 <input type="submit" value="書き込む" name="submitButton">
                 <label for="">名前：</label>
-                <input type="text" name="username" max="30" value="" required>
+                <input type="text" name="username" maxlength="30" value="" required>
             </div>
             <div>
                 <textarea class="commentTextArea" name="comment" value="" required></textarea>
