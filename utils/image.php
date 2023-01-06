@@ -19,13 +19,20 @@ try {
 
 $id = $_GET["id"];
 
-$sql = 'SELECT imagePath, imageType FROM bb_images_table WHERE id=' . $id . ';';
+if (is_numeric($id)) {//文字が数値として有効な値であれば
+    try {
+        $sql = 'SELECT imagePath, imageType FROM bb_images_table WHERE id= :id';
 
-// prepareメソッドでプリペアードステートメントを作成
-$stmt = $dbh->prepare($sql);
+        // prepareメソッドでプリペアードステートメントを作成
+        $stmt = $dbh->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
-// ここで実際にデータベースに対してクエリが実行され、結果がレコードセットとして記憶される
-$stmt->execute();
+        // ここで実際にデータベースに対してクエリが実行され、結果がレコードセットとして記憶される
+        $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("データ保存できませんでした", 3, "../error.log");
+    }
+}
 
 // fetchAllメソッドで、結果のレコードセットを取得し、最初のレコードを$recordに代入
 $record = $stmt->fetchALL(PDO::FETCH_ASSOC)[0];
@@ -37,5 +44,3 @@ echo $data;
 
 //DBの接続を閉じる
 $dbh = null;
-
-?>
