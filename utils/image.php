@@ -10,6 +10,8 @@ $contents_type = array(
     'bmp' => 'image/bmp',
 );
 
+$error_messages_image = array();
+
 //DB接続　 データベース接続情報を引数に渡してPDOクラスのインスタンスを作成
 try {
     $dbh = new PDO(DB_DSN, DB_USER, DB_PASS);
@@ -31,7 +33,19 @@ if (is_numeric($id)) {//文字が数値として有効な値であれば
         $stmt->execute();
     } catch (PDOException $e) {
         error_log("データ保存できませんでした", 3, "../error.log");
+        $error_messages_image["save"] = "データ保存できませんでした";
     }
+}else{
+    error_log("idへの入力値が数値として有効ではありませんでした", 3, "../error.log");
+    $error_messages_image["id"] = "idへは数値を入力してください";
+}
+
+//エラーが存在する場合は、アラートを出す
+if ($error_messages_image) {
+    $alert = "<script>alert('". implode(" ", $error_messages_image) ."');</script>";
+    echo $alert;
+    echo '<script>location.href = "../MyFirstBB.php" ;</script>';
+    exit;
 }
 
 // fetchAllメソッドで、結果のレコードセットを取得し、最初のレコードを$recordに代入

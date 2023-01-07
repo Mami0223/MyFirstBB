@@ -62,18 +62,17 @@ if ($end_no > $comment_all_num) {
 
 //フォームを打ち込んだとき
 if ((!empty($_POST["submitButton"]))) {
-    $error_name = $_POST["username"] ;//エラーログファイルの区別用
+    $user_name = $_POST["username"] ;//エラーログファイルの区別用
 
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
         $error_messages["name"] = "名前を入力してください（空白不可）";
-        error_log($filePostDate. "名前:".$error_name."_エラー種別:名前入力\n", 3, "./error.log");
+        error_log($filePostDate. "名前:".$user_name."_エラー種別:名前入力\n", 3, "./error.log");
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
         $error_messages["comment"] = "コメントを入力してください（空白不可）";
-        error_log($filePostDate. "名前:".$error_name."_エラー種別:コメント入力\n", 3, "./error.log");
-        error_log("コメントを入力してください（空白不可）", 3, "./" . $filePostDate. $error_link. "error.log");
+        error_log($filePostDate. "名前:".$user_name."_エラー種別:コメント入力\n", 3, "./error.log");
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -84,7 +83,7 @@ if ((!empty($_POST["submitButton"]))) {
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
         $error_messages["fileSize"] = "ファイルの添付可能サイズは最大5MBです";
-        error_log($filePostDate. "名前:".$error_name."_エラー種別:画像サイズ\n", 3, "./error.log");
+        error_log($filePostDate. "名前:".$user_name."_エラー種別:画像サイズ\n", 3, "./error.log");
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -95,7 +94,7 @@ if ((!empty($_POST["submitButton"]))) {
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
                 $error_messages["fileExt"] = "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
-                error_log($filePostDate. "名前:".$error_name."_エラー種別:画像拡張子\n", 3, "./error.log");
+                error_log($filePostDate. "名前:".$user_name."_エラー種別:画像拡張子\n", 3, "./error.log");
                 unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除
             }
         }
@@ -121,7 +120,7 @@ if ((!empty($_POST["submitButton"]))) {
             $stmt->execute();
         } catch (PDOException $e) {
             $error_messages["dataSave"] = "データ保存できませんでした";
-            error_log($filePostDate. "名前:".$error_name."_エラー種別:データ保存\n", 3, "./error.log");
+            error_log($filePostDate. "名前:".$user_name."_エラー種別:データ保存\n", 3, "./error.log");
         }
     }
 
@@ -129,10 +128,10 @@ if ((!empty($_POST["submitButton"]))) {
     $pdo = null;
 
     //エラーが存在する場合は、アラートを出す
-    if (!(empty($error_messages))) {
+    if ($error_messages) {
         $alert = "<script>alert('". implode(" ", $error_messages) ."');</script>";
         echo $alert;
-        echo '<script>location.href = "http://54.178.114.228/MyFirstBB/MyFirstBB.php" ;</script>';
+        echo '<script>location.href = location.href ;</script>';
         exit;
     } else {
         //最新投稿の存在するページを開く
