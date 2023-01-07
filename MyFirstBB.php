@@ -108,10 +108,8 @@ if ((!empty($_POST["submitButton"]))) {
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
 
             //SQLインジェクション・クロスサイトスクリプティング対策
-            $usernameSpecialChars = htmlspecialchars($_POST['username'], ENT_QUOTES, "UTF-8");
-            $stmt->bindParam(':username', $usernameSpecialChars, PDO::PARAM_STR);
-            $commentSpecialChars = htmlspecialchars($_POST['comment'], ENT_QUOTES, "UTF-8");
-            $stmt->bindParam(':comment', $commentSpecialChars, PDO::PARAM_STR);
+            $stmt->bindParam(':username', $_POST['username'], PDO::PARAM_STR);
+            $stmt->bindParam(':comment', $_POST['comment'], PDO::PARAM_STR);
 
             $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
@@ -183,12 +181,12 @@ $comment_array = $pdo->query($sql);
                     <div class="nameArea">
                         <span class="id"><?php echo $comment["id"]; ?></span>
                         <span>名前：</span>
-                        <p class="username"><?php echo $comment["username"]; ?></p>
+                        <p class="username"><?php echo htmlspecialchars($comment["username"]); ?></p>
                         <time>:<?php echo $comment["postDate"]; ?></time>
                     </div>
-                    <p class="comment"><?php echo $comment["comment"]; ?></p>
+                    <p class="comment"><?php echo htmlspecialchars($comment["comment"]); ?></p>
 
-                    <?php if (!empty($comment["imageName"])) :?>
+                    <?php if (!empty(htmlspecialchars($comment["imageName"]))) :?>
                         <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
