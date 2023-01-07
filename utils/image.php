@@ -10,7 +10,7 @@ $contents_type = array(
     'bmp' => 'image/bmp',
 );
 
-$error_messages_image = array();
+$image_error_messages = array();
 
 //DB接続　 データベース接続情報を引数に渡してPDOクラスのインスタンスを作成
 try {
@@ -33,16 +33,16 @@ if (is_numeric($id)) {//文字が数値として有効な値であれば
         $stmt->execute();
     } catch (PDOException $e) {
         error_log("データ保存できませんでした", 3, "../error.log");
-        $error_messages_image["save"] = "データ保存できませんでした";
+        $image_error_messages["save"] = "データ保存できませんでした";
     }
 }else{
     error_log("idへの入力値が数値として有効ではありませんでした", 3, "../error.log");
-    $error_messages_image["id"] = "idへは数値を入力してください";
+    $image_error_messages["id"] = "idへは数値を入力してください";
 }
 
 //エラーが存在する場合は、アラートを出す
-if ($error_messages_image) {
-    $alert = "<script>alert('". implode(" ", $error_messages_image) ."');</script>";
+if ($image_error_messages) {
+    $alert = "<script>alert('". implode(" ", $image_error_messages) ."');</script>";
     echo $alert;
     echo '<script>location.href = "../MyFirstBB.php" ;</script>';
     exit;
