@@ -6,14 +6,16 @@ $comment_array = array();
 $pdo = null;
 $stmt = null;
 $postDate = date("Y-m-d H:i:s");
-$filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用
+$filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用＆エラーログファイルの区別用
 $ext = null;
+$error_messages = array();
 
 //DB接続
 try {
     $pdo = new PDO(DB_DSN, DB_USER, DB_PASS);
 } catch (PDOException $e) {
-    error_log("DBに接続できませんでした", 3, "./error.log");
+    $error_messages["db"] = "DBに接続できませんでした";
+    error_log($filePostDate. "_エラー種別:DB接続エラー\n", 3, "./error.log");
 }
 
 
@@ -60,13 +62,18 @@ if ($end_no > $comment_all_num) {
 
 //フォームを打ち込んだとき
 if ((!empty($_POST["submitButton"]))) {
+    $error_name = $_POST["username"] ;//エラーログファイルの区別用
+
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
-        error_log("名前を入力してください（空白不可）", 3, "./error.log");
+        $error_messages["name"] = "名前を入力してください（空白不可）";
+        error_log($filePostDate. "名前:".$error_name."_エラー種別:名前入力\n", 3, "./error.log");
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
-        error_log("コメントを入力してください（空白不可）", 3, "./error.log");
+        $error_messages["comment"] = "コメントを入力してください（空白不可）";
+        error_log($filePostDate. "名前:".$error_name."_エラー種別:コメント入力\n", 3, "./error.log");
+        error_log("コメントを入力してください（空白不可）", 3, "./" . $filePostDate. $error_link. "error.log");
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -76,7 +83,8 @@ if ((!empty($_POST["submitButton"]))) {
 
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
-        error_log("ファイルの添付可能サイズは最大5MBです", 3, "./error.log");
+        $error_messages["fileSize"] = "ファイルの添付可能サイズは最大5MBです";
+        error_log($filePostDate. "名前:".$error_name."_エラー種別:画像サイズ\n", 3, "./error.log");
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -86,14 +94,15 @@ if ((!empty($_POST["submitButton"]))) {
             //画像の拡張子をチェック
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
-                error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
-                unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除   
+                $error_messages["fileExt"] = "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
+                error_log($filePostDate. "名前:".$error_name."_エラー種別:画像拡張子\n", 3, "./error.log");
+                unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除
             }
         }
     }
 
     //エラーメッセージが何もない時だけデータ保存できる
-    if (!(file_exists("./error.log"))) {
+    if (empty($error_messages)) {
         try {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
@@ -113,35 +122,38 @@ if ((!empty($_POST["submitButton"]))) {
 
             $stmt->execute();
         } catch (PDOException $e) {
-            error_log("データ保存できませんでした", 3, "./error.log");
+            $error_messages["dataSave"] = "データ保存できませんでした";
+            error_log($filePostDate. "名前:".$error_name."_エラー種別:データ保存\n", 3, "./error.log");
         }
     }
 
     //DBの接続を閉じる
     $pdo = null;
 
-    //最新投稿の存在するページを開く
-    if ($comment_all_num == $max_page * $MAX) {
-        $new_max_page = $max_page + 1;
-        $link = "Location: MyFirstBB.php?page={$new_max_page}";
+    //エラーが存在する場合は、アラートを出す
+    if (!(empty($error_messages))) {
+        $alert = "<script>alert('". implode(" ", $error_messages) ."');</script>";
+        echo $alert;
+        echo '<script>location.href = "http://54.178.114.228/MyFirstBB/MyFirstBB.php" ;</script>';
+        exit;
     } else {
-        $link = "Location: MyFirstBB.php?page={$max_page}";
+        //最新投稿の存在するページを開く
+        if ($comment_all_num == $max_page * $MAX) {
+            $new_max_page = $max_page + 1;
+            $link = "Location: MyFirstBB.php?page={$new_max_page}";
+        } else {
+            $link = "Location: MyFirstBB.php?page={$max_page}";
+        }
+        header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
+        exit;
     }
-    header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
-    exit;
 }
 
-//DBからコメントデータを取得する
+
+//DBからページに出力用のコメントデータを取得する
 $sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
 
-//エラーログファイルが存在する場合は、アラートを出す
-if (file_exists("./error.log")) {
-    $errorLog = file_get_contents("./error.log");
-    $alert = "<script type='text/javascript'>alert('". $errorLog ."');</script>";
-    echo $alert;
-    unlink("./error.log");//エラーログファイルを削除
-}
 ?>
 
 
@@ -165,7 +177,7 @@ if (file_exists("./error.log")) {
             <?php
             foreach ($comment_array as $comment) :
                 $imagesrc = "utils/image.php?id=" . $comment["id"];
-            ?>
+                ?>
             <article>
                 <div class="wrapper">
                     <div class="nameArea">
