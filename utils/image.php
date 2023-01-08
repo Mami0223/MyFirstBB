@@ -1,6 +1,7 @@
 <?php
 
 include('setting.php');
+include('function.php');
 
 $contents_type = array(
     'png' => 'image/png',
@@ -32,12 +33,12 @@ if (is_numeric($id)) {//文字が数値として有効な値であれば
         // ここで実際にデータベースに対してクエリが実行され、結果がレコードセットとして記憶される
         $stmt->execute();
     } catch (PDOException $e) {
-        error_log("データ保存できませんでした", 3, "../error.log");
         $image_error_messages["save"] = "データ保存できませんでした";
+        myErrorLog("エラー種別:データ保存エラー");
     }
 }else{
-    error_log("idへの入力値が数値として有効ではありませんでした", 3, "../error.log");
     $image_error_messages["id"] = "idへは数値を入力してください";
+    myErrorLog("エラー種別:idへの入力値が数値として無効");
 }
 
 //エラーが存在する場合は、アラートを出す

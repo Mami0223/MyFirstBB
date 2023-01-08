@@ -1,12 +1,12 @@
 <?php
 
 include('utils/setting.php');
+include('utils/function.php');
 
 $comment_array = array();
 $pdo = null;
 $stmt = null;
 $postDate = date("Y-m-d H:i:s");
-$filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用＆エラーログファイルの区別用
 $ext = null;
 $error_messages = array();
 
@@ -15,7 +15,7 @@ try {
     $pdo = new PDO(DB_DSN, DB_USER, DB_PASS);
 } catch (PDOException $e) {
     $error_messages["db"] = "DBに接続できませんでした";
-    error_log($filePostDate. "_エラー種別:DB接続エラー\n", 3, "./error.log");
+    myErrorLog("エラー種別:DB接続エラー");
 }
 
 
@@ -61,18 +61,18 @@ if ($end_no > $comment_all_num) {
 /////////////////////////
 
 //フォームを打ち込んだとき
-if ((!empty($_POST["submitButton"]))) {
+if ($_POST["submitButton"]) {
     $user_name = $_POST["username"] ;//エラーログファイルの区別用
 
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
         $error_messages["name"] = "名前を入力してください（空白不可）";
-        error_log($filePostDate. "名前:".$user_name."_エラー種別:名前入力\n", 3, "./error.log");
+        myErrorLog("名前:".$user_name."_エラー種別:名前入力");
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
         $error_messages["comment"] = "コメントを入力してください（空白不可）";
-        error_log($filePostDate. "名前:".$user_name."_エラー種別:コメント入力\n", 3, "./error.log");
+        myErrorLog("名前:".$user_name."_エラー種別:コメント入力");
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -83,7 +83,7 @@ if ((!empty($_POST["submitButton"]))) {
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
         $error_messages["fileSize"] = "ファイルの添付可能サイズは最大5MBです";
-        error_log($filePostDate. "名前:".$user_name."_エラー種別:画像サイズ\n", 3, "./error.log");
+        myErrorLog("名前:".$user_name."_エラー種別:画像サイズ");
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -94,7 +94,7 @@ if ((!empty($_POST["submitButton"]))) {
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
                 $error_messages["fileExt"] = "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
-                error_log($filePostDate. "名前:".$user_name."_エラー種別:画像拡張子\n", 3, "./error.log");
+                myErrorLog("名前:".$user_name."_エラー種別:画像拡張子");
                 unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除
             }
         }
@@ -120,7 +120,7 @@ if ((!empty($_POST["submitButton"]))) {
             $stmt->execute();
         } catch (PDOException $e) {
             $error_messages["dataSave"] = "データ保存できませんでした";
-            error_log($filePostDate. "名前:".$user_name."_エラー種別:データ保存\n", 3, "./error.log");
+            myErrorLog("名前:".$user_name."_エラー種別:データ保存");
         }
     }
 
@@ -180,12 +180,12 @@ $comment_array = $pdo->query($sql);
                     <div class="nameArea">
                         <span class="id"><?php echo $comment["id"]; ?></span>
                         <span>名前：</span>
-                        <p class="username"><?php echo htmlspecialchars($comment["username"]); ?></p>
+                        <p class="username"><?php echo myEscape($comment["username"]); ?></p>
                         <time>:<?php echo $comment["postDate"]; ?></time>
                     </div>
-                    <p class="comment"><?php echo htmlspecialchars($comment["comment"]); ?></p>
+                    <p class="comment"><?php echo myEscape($comment["comment"]); ?></p>
 
-                    <?php if (!empty(htmlspecialchars($comment["imageName"]))) :?>
+                    <?php if ($comment["imageName"]) :?>
                         <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
