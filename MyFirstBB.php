@@ -1,5 +1,5 @@
 <?php
-
+ini_set('display_errors', "On");
 include('utils/setting.php');
 include('utils/function.php');
 
@@ -61,7 +61,7 @@ if ($end_no > $comment_all_num) {
 /////////////////////////
 
 //フォームを打ち込んだとき
-if ($_POST["submitButton"]) {
+if (isset($_POST["submitButton"])) {
     $user_name = $_POST["username"] ;//エラーログファイルの区別用
 
     //名前のチェック
