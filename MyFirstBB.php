@@ -1,19 +1,21 @@
 <?php
-
+ini_set('display_errors', "On");
 include('utils/setting.php');
+include('utils/function.php');
 
 $comment_array = array();
 $pdo = null;
 $stmt = null;
 $postDate = date("Y-m-d H:i:s");
-$filePostDate = date("Y-m-d_H-i-s_"); //同名の画像ファイルがアップロードされた際の区別用
 $ext = null;
+$error_messages = array();
 
 //DB接続
 try {
     $pdo = new PDO(DB_DSN, DB_USER, DB_PASS);
 } catch (PDOException $e) {
-    error_log("DBに接続できませんでした", 3, "./error.log");
+    $error_messages["db"] = "DBに接続できませんでした";
+    myErrorLog("エラー種別:DB接続エラー");
 }
 
 
@@ -59,14 +61,18 @@ if ($end_no > $comment_all_num) {
 /////////////////////////
 
 //フォームを打ち込んだとき
-if ((!empty($_POST["submitButton"]))) {
+if (isset($_POST["submitButton"])) {
+    $user_name = $_POST["username"] ;//エラーログファイルの区別用
+
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
-        error_log("名前を入力してください（空白不可）", 3, "./error.log");
+        $error_messages["name"] = "名前を入力してください（空白不可）";
+        myErrorLog("名前:".$user_name."_エラー種別:名前入力");
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
-        error_log("コメントを入力してください（空白不可）", 3, "./error.log");
+        $error_messages["comment"] = "コメントを入力してください（空白不可）";
+        myErrorLog("名前:".$user_name."_エラー種別:コメント入力");
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -76,7 +82,8 @@ if ((!empty($_POST["submitButton"]))) {
 
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
-        error_log("ファイルの添付可能サイズは最大5MBです", 3, "./error.log");
+        $error_messages["fileSize"] = "ファイルの添付可能サイズは最大5MBです";
+        myErrorLog("名前:".$user_name."_エラー種別:画像サイズ");
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -86,23 +93,22 @@ if ((!empty($_POST["submitButton"]))) {
             //画像の拡張子をチェック
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
-                error_log("指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください", 3, "./error.log");
-                unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除   
+                $error_messages["fileExt"] = "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
+                myErrorLog("名前:".$user_name."_エラー種別:画像拡張子");
+                unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除
             }
         }
     }
 
     //エラーメッセージが何もない時だけデータ保存できる
-    if (!(file_exists("./error.log"))) {
+    if (empty($error_messages)) {
         try {
             $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
         VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
 
             //SQLインジェクション・クロスサイトスクリプティング対策
-            $usernameSpecialChars = htmlspecialchars($_POST['username'], ENT_QUOTES, "UTF-8");
-            $stmt->bindParam(':username', $usernameSpecialChars, PDO::PARAM_STR);
-            $commentSpecialChars = htmlspecialchars($_POST['comment'], ENT_QUOTES, "UTF-8");
-            $stmt->bindParam(':comment', $commentSpecialChars, PDO::PARAM_STR);
+            $stmt->bindParam(':username', $_POST['username'], PDO::PARAM_STR);
+            $stmt->bindParam(':comment', $_POST['comment'], PDO::PARAM_STR);
 
             $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
@@ -113,35 +119,38 @@ if ((!empty($_POST["submitButton"]))) {
 
             $stmt->execute();
         } catch (PDOException $e) {
-            error_log("データ保存できませんでした", 3, "./error.log");
+            $error_messages["dataSave"] = "データ保存できませんでした";
+            myErrorLog("名前:".$user_name."_エラー種別:データ保存");
         }
     }
 
     //DBの接続を閉じる
     $pdo = null;
 
-    //最新投稿の存在するページを開く
-    if ($comment_all_num == $max_page * $MAX) {
-        $new_max_page = $max_page + 1;
-        $link = "Location: MyFirstBB.php?page={$new_max_page}";
+    //エラーが存在する場合は、アラートを出す
+    if ($error_messages) {
+        $alert = "<script>alert('". implode(" ", $error_messages) ."');</script>";
+        echo $alert;
+        echo '<script>location.href = location.href ;</script>';
+        exit;
     } else {
-        $link = "Location: MyFirstBB.php?page={$max_page}";
+        //最新投稿の存在するページを開く
+        if ($comment_all_num == $max_page * $MAX) {
+            $new_max_page = $max_page + 1;
+            $link = "Location: MyFirstBB.php?page={$new_max_page}";
+        } else {
+            $link = "Location: MyFirstBB.php?page={$max_page}";
+        }
+        header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
+        exit;
     }
-    header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
-    exit;
 }
 
-//DBからコメントデータを取得する
+
+//DBからページに出力用のコメントデータを取得する
 $sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
 
-//エラーログファイルが存在する場合は、アラートを出す
-if (file_exists("./error.log")) {
-    $errorLog = file_get_contents("./error.log");
-    $alert = "<script type='text/javascript'>alert('". $errorLog ."');</script>";
-    echo $alert;
-    unlink("./error.log");//エラーログファイルを削除
-}
 ?>
 
 
@@ -165,18 +174,18 @@ if (file_exists("./error.log")) {
             <?php
             foreach ($comment_array as $comment) :
                 $imagesrc = "utils/image.php?id=" . $comment["id"];
-            ?>
+                ?>
             <article>
                 <div class="wrapper">
                     <div class="nameArea">
                         <span class="id"><?php echo $comment["id"]; ?></span>
                         <span>名前：</span>
-                        <p class="username"><?php echo $comment["username"]; ?></p>
+                        <p class="username"><?php echo myEscape($comment["username"]); ?></p>
                         <time>:<?php echo $comment["postDate"]; ?></time>
                     </div>
-                    <p class="comment"><?php echo $comment["comment"]; ?></p>
+                    <p class="comment"><?php echo myEscape($comment["comment"]); ?></p>
 
-                    <?php if (!empty($comment["imageName"])) :?>
+                    <?php if ($comment["imageName"]) :?>
                         <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
