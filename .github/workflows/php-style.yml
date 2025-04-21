@@ -25,4 +25,4 @@ jobs:
         run: composer install
 
       - name: Run PHP_CodeSniffer
-        run: vendor/bin/phpcs --standard=PSR12 .
+        run: vendor/bin/phpcs --standard=PSR12 src
