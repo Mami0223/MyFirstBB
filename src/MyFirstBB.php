@@ -221,7 +221,7 @@ $comment_array = $pdo->query($sql);
     <!--戻る-->
     <?php if ($now >= 2) : ?>
         <a href="MyFirstBB.php?page=<?php echo($now - 1); ?>" class="page_feed">&laquo;</a>
-    <?php else: ?>
+    <?php else : ?>
         <span class="first_last_page">&laquo;</span>
     <?php endif; ?>
 
