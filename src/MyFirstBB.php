@@ -103,8 +103,10 @@ if (isset($_POST["submitButton"])) {
     //エラーメッセージが何もない時だけデータ保存できる
     if (empty($error_messages)) {
         try {
-            $stmt = $pdo->prepare('INSERT INTO bb_images_table (username,comment,postDate,imageName,imageType,imagePath) 
-        VALUES (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
+            $stmt = $pdo->prepare('INSERT INTO bb_images_table 
+                        (username, comment, postDate, imageName, imageType, imagePath) 
+                        VALUES 
+                        (:username, :comment, :postDate, :imageName, :imageType, :imagePath)');
 
             //SQLインジェクション・クロスサイトスクリプティング対策
             $stmt->bindParam(':username', $_POST['username'], PDO::PARAM_STR);
@@ -112,7 +114,8 @@ if (isset($_POST["submitButton"])) {
 
             $stmt->bindParam(':postDate', $postDate, PDO::PARAM_STR);
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
-            $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得(既述のextは画像添付しない場合に読み込まれないのでここでextの再定義必須)
+            //拡張子を取得(既述のextは画像添付しない場合に読み込まれないのでここでextの再定義必須)
+            $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION);
             $stmt->bindParam(':imageType', $ext, PDO::PARAM_STR);
             $path = "files/" . $filePostDate . $_FILES["upfile"]["name"];
             $stmt->bindParam(':imagePath', $path, PDO::PARAM_STR);
@@ -141,14 +144,17 @@ if (isset($_POST["submitButton"])) {
         } else {
             $link = "Location: MyFirstBB.php?page={$max_page}";
         }
-        header($link); //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
+        //リロードによる再送信を防止するためのリダイレクト　https://gray-code.com/php/make-the-board-vol23/
+        header($link);
         exit;
     }
 }
 
 
 //DBからページに出力用のコメントデータを取得する
-$sql = "SELECT id,username,comment,postDate,imageName,imageType,imagePath FROM `bb_images_table` WHERE $start_no <= id && id < $end_no";
+$sql = "SELECT id, username, comment, postDate, imageName, imageType, imagePath 
+        FROM `bb_images_table` 
+        WHERE $start_no <= id && id < $end_no";
 $comment_array = $pdo->query($sql);
 
 ?>
