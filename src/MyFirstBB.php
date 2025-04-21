@@ -62,17 +62,17 @@ if ($end_no > $comment_all_num) {
 
 //フォームを打ち込んだとき
 if (isset($_POST["submitButton"])) {
-    $user_name = $_POST["username"] ;//エラーログファイルの区別用
+    $user_name = $_POST["username"];//エラーログファイルの区別用
 
     //名前のチェック
     if (preg_match('/^\s*$/u', $_POST["username"])) {
         $error_messages["name"] = "名前を入力してください（空白不可）";
-        myErrorLog("名前:".$user_name."_エラー種別:名前入力");
+        myErrorLog("名前:" . $user_name . "_エラー種別:名前入力");
     }
     //コメントのチェック
     if (preg_match('/^\s*$/u', $_POST["comment"])) {
         $error_messages["comment"] = "コメントを入力してください（空白不可）";
-        myErrorLog("名前:".$user_name."_エラー種別:コメント入力");
+        myErrorLog("名前:" . $user_name . "_エラー種別:コメント入力");
     }
 
     //画像保存用のfilesディレクトリが存在しなければディレクトリ作成
@@ -83,7 +83,7 @@ if (isset($_POST["submitButton"])) {
     //添付可能な画像データサイズは5MBまで
     if ($_FILES["upfile"]["size"] >= 5 * 1024 * 1024) {
         $error_messages["fileSize"] = "ファイルの添付可能サイズは最大5MBです";
-        myErrorLog("名前:".$user_name."_エラー種別:画像サイズ");
+        myErrorLog("名前:" . $user_name . "_エラー種別:画像サイズ");
     } else {
         //画像が添付された場合、拡張子をチェック
         if (move_uploaded_file($_FILES["upfile"]["tmp_name"], "files/" . $filePostDate . $_FILES["upfile"]["name"])) {
@@ -94,7 +94,7 @@ if (isset($_POST["submitButton"])) {
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得
             if (!($ext == "png" || $ext == "jpg" || $ext == "jpeg" || $ext == "gif" || $ext == "bmp")) {
                 $error_messages["fileExt"] = "指定された拡張子（png,jpg,jpeg,gif,bmp）のデータをアップロードしてください";
-                myErrorLog("名前:".$user_name."_エラー種別:画像拡張子");
+                myErrorLog("名前:" . $user_name . "_エラー種別:画像拡張子");
                 unlink("files/" . $filePostDate . $_FILES["upfile"]["name"]);//ファイルを削除
             }
         }
@@ -114,13 +114,13 @@ if (isset($_POST["submitButton"])) {
             $stmt->bindParam(':imageName', $_FILES["upfile"]["name"], PDO::PARAM_STR);
             $ext = pathinfo($_FILES["upfile"]["name"], PATHINFO_EXTENSION); //拡張子を取得(既述のextは画像添付しない場合に読み込まれないのでここでextの再定義必須)
             $stmt->bindParam(':imageType', $ext, PDO::PARAM_STR);
-            $path = "files/" . $filePostDate. $_FILES["upfile"]["name"];
+            $path = "files/" . $filePostDate . $_FILES["upfile"]["name"];
             $stmt->bindParam(':imagePath', $path, PDO::PARAM_STR);
 
             $stmt->execute();
         } catch (PDOException $e) {
             $error_messages["dataSave"] = "データ保存できませんでした";
-            myErrorLog("名前:".$user_name."_エラー種別:データ保存");
+            myErrorLog("名前:" . $user_name . "_エラー種別:データ保存");
         }
     }
 
@@ -129,7 +129,7 @@ if (isset($_POST["submitButton"])) {
 
     //エラーが存在する場合は、アラートを出す
     if ($error_messages) {
-        $alert = "<script>alert('". implode(" ", $error_messages) ."');</script>";
+        $alert = "<script>alert('" . implode(" ", $error_messages) . "');</script>";
         echo $alert;
         echo '<script>location.href = location.href ;</script>';
         exit;
@@ -167,14 +167,14 @@ $comment_array = $pdo->query($sql);
 </head>
 
 <body>
-    <h1 class="title">PHPとMySQLで掲示板</h1>
+<h1 class="title">PHPとMySQLで掲示板</h1>
 
-    <div class="boardWrapper">
-        <section>
-            <?php
-            foreach ($comment_array as $comment) :
-                $imagesrc = "utils/image.php?id=" . $comment["id"];
-                ?>
+<div class="boardWrapper">
+    <section>
+        <?php
+        foreach ($comment_array as $comment) :
+            $imagesrc = "utils/image.php?id=" . $comment["id"];
+            ?>
             <article>
                 <div class="wrapper">
                     <div class="nameArea">
@@ -185,64 +185,64 @@ $comment_array = $pdo->query($sql);
                     </div>
                     <p class="comment"><?php echo myEscape($comment["comment"]); ?></p>
 
-                    <?php if ($comment["imageName"]) :?>
+                    <?php if ($comment["imageName"]) : ?>
                         <img src="<?php echo $imagesrc ?>" , width="250">
                     <?php endif; ?>
                 </div>
             </article>
-            <?php endforeach; ?>
-        </section>
-        <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
-            <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
+        <?php endforeach; ?>
+    </section>
+    <form class="formWrapper" action="" enctype="multipart/form-data" method="POST">
+        <!--actionの中身は空にするhttps://style.potepan.com/articles/20409.html#action82218221-->
 
-            <div>
-                <input type="submit" value="書き込む" name="submitButton">
-                <label for="">名前：</label>
-                <input type="text" name="username" maxlength="30" value="" required>
-            </div>
-            <div>
-                <textarea class="commentTextArea" name="comment" value="" required></textarea>
-            </div>
-            <div>
-                添付ファイル：<br />
-                <input type="file" name="upfile" size="30" /><br />
-                <br />
-            </div>
+        <div>
+            <input type="submit" value="書き込む" name="submitButton">
+            <label for="">名前：</label>
+            <input type="text" name="username" maxlength="30" value="" required>
+        </div>
+        <div>
+            <textarea class="commentTextArea" name="comment" value="" required></textarea>
+        </div>
+        <div>
+            添付ファイル：<br/>
+            <input type="file" name="upfile" size="30"/><br/>
+            <br/>
+        </div>
 
-        </form>
-    </div>
+    </form>
+</div>
 
-    <!-- ページ移動 -->
-    <p class="from_to">
-        <?php echo $comment_all_num; ?>件中 <?php echo $start_no; ?> - <?php echo $hyoji_end_no; ?> 件目を表示
-    </p>
+<!-- ページ移動 -->
+<p class="from_to">
+    <?php echo $comment_all_num; ?>件中 <?php echo $start_no; ?> - <?php echo $hyoji_end_no; ?> 件目を表示
+</p>
 
-    <div class="pagination">
-        <!--戻る-->
-        <?php if ($now >= 2) : ?>
-            <a href="MyFirstBB.php?page=<?php echo($now - 1); ?>" class="page_feed">&laquo;</a>
-        <?php else: ?>
-            <span class="first_last_page">&laquo;</span>
-        <?php endif; ?>
+<div class="pagination">
+    <!--戻る-->
+    <?php if ($now >= 2) : ?>
+        <a href="MyFirstBB.php?page=<?php echo($now - 1); ?>" class="page_feed">&laquo;</a>
+    <?php else: ?>
+        <span class="first_last_page">&laquo;</span>
+    <?php endif; ?>
 
-        <!--ページ番号-->
-        <?php for ($i = 1; $i <= $max_page; $i++) : ?>
-            <?php if ($i >= $now - $range && $i <= $now + $range) : ?>
-                <?php if ($i == $now) : ?>
-                    <span class="now_page_number"><?php echo $i; ?></span>
-                <?php else : ?>
-                    <a href="?page=<?php echo $i; ?>" class="page_number"><?php echo $i; ?></a>
-                <?php endif; ?>
+    <!--ページ番号-->
+    <?php for ($i = 1; $i <= $max_page; $i++) : ?>
+        <?php if ($i >= $now - $range && $i <= $now + $range) : ?>
+            <?php if ($i == $now) : ?>
+                <span class="now_page_number"><?php echo $i; ?></span>
+            <?php else : ?>
+                <a href="?page=<?php echo $i; ?>" class="page_number"><?php echo $i; ?></a>
             <?php endif; ?>
-        <?php endfor; ?>
-
-        <!--進む-->
-        <?php if ($now < $max_page) : ?>
-            <a href="MyFirstBB.php?page=<?php echo($now + 1); ?>" class="page_feed">&raquo;</a>
-        <?php else : ?>
-            <span class="first_last_page">&raquo;</span>
         <?php endif; ?>
-    </div>
+    <?php endfor; ?>
+
+    <!--進む-->
+    <?php if ($now < $max_page) : ?>
+        <a href="MyFirstBB.php?page=<?php echo($now + 1); ?>" class="page_feed">&raquo;</a>
+    <?php else : ?>
+        <span class="first_last_page">&raquo;</span>
+    <?php endif; ?>
+</div>
 
 </body>
 
